@@ -7,16 +7,41 @@ jobs:
   run-and-notify:
     runs-on: ubuntu-latest
     steps:
-      - name: Run container
+      - name: download blink de
         id: run
         continue-on-error: true
         run: |
           set -o pipefail
-          docker run --rm -v "$GITHUB_WORKSPACE/downloads":/downloads ghcr.io/nicoweio/blinkist:latest --freedaily /downloads || echo "FAILED" > /tmp/run_status || true
+          docker run --rm -v "$GITHUB_WORKSPACE/downloads":/downloads ghcr.io/nicoweio/blinkist:latest --freedaily -l de /downloads || echo "FAILED" > /tmp/run_status || true
           if [ -f /tmp/run_status ]; then echo "status=failed" >> $GITHUB_OUTPUT; else echo "status=success" >> $GITHUB_OUTPUT; fi
 
-      - name: send default message
+      - name: combine m4a
+        if: steps.run.outputs.status == 'success'
+        run: |
+          set -eo pipefail
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+          for dir in "$GITHUB_WORKSPACE"/downloads/*; do
+            if [ -d "$dir" ]; then
+              # only proceed if there are .m4a files
+              shopt -s nullglob
+              files=("$dir"/*.m4a)
+              if [ -e "${files[0]}" ]; then
+                rm -f "$dir/list.txt"
+                # preserve natural sort order
+                while IFS= read -r f; do
+                  printf "file '%s'\n" "$f" >> "$dir/list.txt"
+                done < <(ls -1v "$dir"/*.m4a)
+
+                # concatenate and re-encode to a single m4a
+                ffmpeg -y -f concat -safe 0 -i "$dir/list.txt" -c:a aac -b:a 128k "$dir/combined.m4a"
+              fi
+            fi
+          done
+
+      - name: send audio
         uses: appleboy/telegram-action@master
         with:
           to: ${{ secrets.TELEGRAM_TO }}
           token: ${{ secrets.TELEGRAM_TOKEN }}
+          audio: ${{ github.workspace }}/downloads/*/combined.m4a
