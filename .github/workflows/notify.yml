@@ -17,11 +17,20 @@ jobs:
           docker run --rm -v "downloads":/downloads ghcr.io/nicoweio/blinkist:latest --freedaily /downloads || echo "FAILED" > /tmp/run_status || true
           if [ -f /tmp/run_status ]; then echo "status=failed" >> $GITHUB_OUTPUT; else echo "status=success" >> $GITHUB_OUTPUT; fi
 
-      - uses: montudor/action-zip@v1
-        with:
-          args: zip -qq -r dir.zip downloads
+      - name: create zip
+        id: zip
+        run: |
+          set -eo pipefail
+          if [ -d downloads ] && find downloads -type f | grep -q .; then
+            zip -qq -r dir.zip downloads
+            echo "zip_created=true" >> $GITHUB_OUTPUT
+          else
+            echo "No downloads present or no files to zip"
+            echo "zip_created=false" >> $GITHUB_OUTPUT
+          fi
 
       - name: send audio
+        if: steps.zip.outputs.zip_created == 'true'
         uses: appleboy/telegram-action@master
         with:
           to: ${{ secrets.TELEGRAM_TO }}
