@@ -7,6 +7,8 @@ jobs:
   run-and-notify:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout 
+        uses: actions/checkout@v2
       - name: download blink de
         id: run
         continue-on-error: true
