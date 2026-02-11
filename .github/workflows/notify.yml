@@ -12,16 +12,16 @@ jobs:
         continue-on-error: true
         run: |
           set -o pipefail
-          docker run --rm -v "$GITHUB_WORKSPACE/downloads":/downloads ghcr.io/nicoweio/blinkist:latest --freedaily -l de /downloads || echo "FAILED" > /tmp/run_status || true
+          docker run --rm -v "downloads":/downloads ghcr.io/nicoweio/blinkist:latest --freedaily /downloads || echo "FAILED" > /tmp/run_status || true
           if [ -f /tmp/run_status ]; then echo "status=failed" >> $GITHUB_OUTPUT; else echo "status=success" >> $GITHUB_OUTPUT; fi
 
       - uses: montudor/action-zip@v1
         with:
-          args: zip -qq -r $GITHUB_WORKSPACE/dir.zip $GITHUB_WORKSPACE/downloads
+          args: zip -qq -r dir.zip downloads
 
       - name: send audio
         uses: appleboy/telegram-action@master
         with:
           to: ${{ secrets.TELEGRAM_TO }}
           token: ${{ secrets.TELEGRAM_TOKEN }}
-          document: ${{ github.workspace }}/dir.zip^
+          document: dir.zip
