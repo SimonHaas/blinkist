@@ -9,23 +9,16 @@ jobs:
   run-and-notify:
     runs-on: ubuntu-latest
     steps:
-      - name: Run container
-        id: run
-        continue-on-error: true
-        run: |
-          set -o pipefail
-          docker run --rm -v "$GITHUB_WORKSPACE/downloads":/downloads ghcr.io/nicoweio/blinkist:latest --freedaily /downloads || echo "FAILED" > /tmp/run_status || true
-          if [ -f /tmp/run_status ]; then echo "status=failed" >> $GITHUB_OUTPUT; else echo "status=success" >> $GITHUB_OUTPUT; fi
+      #- name: Run container
+      #  id: run
+      #  continue-on-error: true
+        # run: |
+        #   set -o pipefail
+        #   docker run --rm -v "$GITHUB_WORKSPACE/downloads":/downloads ghcr.io/nicoweio/blinkist:latest --freedaily /downloads || echo "FAILED" > /tmp/run_status || true
+        #   if [ -f /tmp/run_status ]; then echo "status=failed" >> $GITHUB_OUTPUT; else echo "status=success" >> $GITHUB_OUTPUT; fi
 
-      - name: Send Telegram notification
-        if: always()
+      - name: send default message
         uses: appleboy/telegram-action@master
         with:
+          to: ${{ secrets.TELEGRAM_TO }}
           token: ${{ secrets.TELEGRAM_TOKEN }}
-          to: ${{ secrets.TELEGRAM_CHAT_ID }}
-          message: |
-            Repository: ${{ github.repository }}
-            Workflow: ${{ github.workflow }}
-            Run: ${{ github.run_number }}
-            Actor: ${{ github.actor }}
-            Status: ${{ steps.run.outputs.status }}
